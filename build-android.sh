@@ -25,13 +25,17 @@ fi
 echo "== Add Android platform"
 npx cap add android
 
+echo "== Change applicationId (separate app: Review Ayah)"
+sed -i -E 's/applicationId[ =]+"?com\.idris\.ayahmarker"?/applicationId "com.idris.reviewayah"/' android/app/build.gradle
+grep -q 'com.idris.reviewayah' android/app/build.gradle || { echo "!! applicationId was not changed"; exit 1; }
+
 echo "== Custom Java (keep screen on + save to Downloads)"
 PKG_DIR=android/app/src/main/java/com/idris/ayahmarker
 mkdir -p "$PKG_DIR"
 cp MainActivity.java SaveFilePlugin.java "$PKG_DIR/"
 
 echo "== Launcher icons"
-python3 -m pip install --quiet pillow --break-system-packages 2>/dev/null || python3 -m pip install --quiet pillow || sudo apt-get install -y python3-pil
+python3 -c "import PIL" 2>/dev/null || python3 -m pip install --quiet pillow --break-system-packages 2>/dev/null || python3 -m pip install --quiet pillow || sudo apt-get install -y python3-pil
 python3 make-icons.py
 
 echo "== Sync + build"

@@ -10,9 +10,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-title" content="دیاریکەری ئایەت">
+<meta name="apple-mobile-web-app-title" content="Review Ayah">
 
-<title>دیاریکەری ئایەت</title>
+<title>Review Ayah</title>
 <style>
   :root{
     --ink:#152420;
@@ -588,7 +588,10 @@
   .mark-row .clearbtn{ margin-left:auto !important; }
 
 
-/* ===== پانێڵی پێداچوونەوە لە مینیوی ئەپەکەوە دەکرێتەوە (لەگەڵ ئەپی سەرەکی یەک ئەپن) ===== */
+/* ===== review-only mode: the review panel IS the main screen (main UI stays in the DOM, hidden, so every function keeps working) ===== */
+.wrap{display:none !important;}
+#startRev{display:flex !important;}
+#startRev #srClose{display:none !important;}
 #startRev #srFontUp, #startRev #srFontDn{display:none !important;}
 #startRev .srPickBtn{height:28px !important;font-size:12.5px !important;padding:0 6px !important;border-radius:10px !important;}
 #startRev #srSuraBtn{flex:1.6 1 0 !important;}
@@ -1600,6 +1603,7 @@ body.dark #startRev .srMk.cur{background:rgba(84,200,190,.28);color:#d6f5f1;}
         <button class="menuAction" id="loadProgressBtn" style="display:none;">▶️ دەستپێکردنەوە لە ئایەتی هەڵگیراو</button>
         <button class="menuAction" id="clearProgressBtn" data-i18n="progressClear" style="display:none;">🗑 سڕینەوەی ئایەتی گەیشتوو</button>
         <p class="hint menuHint" id="progressStatus" style="display:none;"></p>
+        <button class="menuAction" id="autoMarkBtn" data-i18n="autoMark" style="margin-top:0;">🤖 دیاریکردنی خۆکاری ئایەتەکان (لە دەنگەوە)</button>
         <button class="menuAction" id="onlineMarkBtn" data-i18n="onlineMark" style="margin-top:0;">🌐 دیاریکردنی ئۆنڵاین (Whisper — بێبەرامبەر بە Groq)</button>
         <input id="openaiKey" type="password" autocomplete="off" placeholder="کلیل: gsk_... (Groq بێبەرامبەر) یان sk-... (OpenAI)">
         <div id="convBox" style="display:none;">
@@ -20438,16 +20442,6 @@ self.onmessage=function(e){
 (function(){
   var panel=document.getElementById('startRev'), tools=panel&&panel.querySelector('.srTools'), orig=document.getElementById('settingsMenu');
   if(!panel||!tools||!orig) return;
-  // قەبارەی دەقی قورئان لە پێداچوونەوە: سەربەخۆیە و هیچ پەیوەندییەکی بە شاشەی سەرەکییەوە نییە
-  var RF_KEY='review_quran_font_size', RF=16;
-  try{ var sv=parseInt(localStorage.getItem(RF_KEY),10); if(sv>=2&&sv<=40) RF=sv; }catch(e){}
-  function setRF(v){
-    RF=Math.min(40,Math.max(2,Math.round(Number(v)||16)));
-    document.documentElement.style.setProperty('--review-font-size',RF+'px');
-    try{ localStorage.setItem(RF_KEY,String(RF)); }catch(e){}
-    var fd=box&&box.querySelector('#fontSizeDisplay'); if(fd) fd.textContent=String(RF);
-  }
-  document.documentElement.style.setProperty('--review-font-size',RF+'px');
   var btn=document.createElement('button'); btn.type='button'; btn.id='srMenuBtn'; btn.textContent='⋮'; btn.setAttribute('aria-label','settings');
   btn.style.fontSize='22px'; btn.style.lineHeight='1';
   var hd=panel.querySelector('.srHead'); hd.insertBefore(btn, hd.firstChild);
@@ -20466,13 +20460,10 @@ self.onmessage=function(e){
     box.style.cssText='position:absolute;left:8px;right:8px;z-index:20;overflow-y:auto;box-shadow:0 8px 22px rgba(0,0,0,.45);border:1.5px solid var(--gold);';
     box.querySelectorAll('[for]').forEach(function(x){x.removeAttribute('for');});
     var rs=box.querySelector('#reviewSection'); if(rs) rs.style.display='none';
-    var fd0=box.querySelector('#fontSizeDisplay'); if(fd0) fd0.textContent=String(RF);
     oAll=[orig].concat([].slice.call(orig.querySelectorAll('*')));
     cAll=[box].concat([].slice.call(box.querySelectorAll('*')));
     panel.appendChild(box); place(); box.scrollTop=scroll;
     box.addEventListener('click',function(e){
-      var tid=e.target.id||'';
-      if(tid==='fontMinus'||tid==='fontPlus'){ e.stopPropagation(); setRF(RF+(tid==='fontPlus'?1:-1)); return; }
       var i=cAll.indexOf(e.target), t=oAll[i];
       if(!t||/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
       e.stopPropagation();
@@ -20491,6 +20482,15 @@ self.onmessage=function(e){
   btn.addEventListener('click',function(e){ e.stopPropagation(); if(box) close(); else build(); });
   panel.addEventListener('click',function(e){ if(e.target.id==='srClose') close(); });
   window.addEventListener('resize',place);
+})();
+</script>
+<script>
+(function(){
+  var panel=document.getElementById('startRev'); if(!panel) return;
+  var pl=document.getElementById('player'), og=pl.getAttribute;
+  pl.getAttribute=function(n){ return n==='src' ? (og.call(this,'src')||'x') : og.call(this,n); };   // let the panel open even before an audio file is chosen
+  try{ document.getElementById('startRevBtn').click(); }catch(e){}
+  delete pl.getAttribute;
 })();
 </script>
 
@@ -20588,7 +20588,7 @@ body.dark #startRev .srMk.cur{color:var(--ink) !important;}
 #startRev .srMk .mkn, #startRev .srMk .mkm{font-size:24px !important;}
 #startRev .srMk.cur, body.dark #startRev .srMk.cur{background:transparent !important;}
 
-/* ڕیزی −1000…+1000 بۆ سەرەوە، ڕیزی −100…+100 بۆ خوارەوە */
+/* ڕیزی −100…+100 بۆ سەرەوە، ڕیزی −1000…+1000 بۆ خوارەوە */
 #startRev .srRow.srNudge + .srRow.srNudge{order:5 !important;}
 #startRev .srRow.srNudge:not(.srNudge + .srNudge){order:4 !important;}
 #startRev .srRow.srMain{order:6 !important;}
@@ -20707,12 +20707,6 @@ html body #startRev #srAudBtn.on{font-size:24px !important;line-height:1 !import
 
 /* سێ خاڵەکەی مینیو (⋮) کەمێک گەورەتر */
 html body #startRev #srMenuBtn{font-size:30px !important;line-height:1 !important;padding:0 !important;font-weight:900 !important;height:36px !important;min-height:36px !important;flex:0 0 34px !important;width:34px !important;align-self:center !important;display:flex !important;align-items:center !important;justify-content:center !important;overflow:visible !important;}
-
-/* دوگمەی ✕ بۆ گەڕانەوە بۆ ئەپی سەرەکی (لای چەپی ڕیزی سەرەوە) */
-html body #startRev #srClose{display:block !important;order:-1 !important;flex:0 0 34px !important;width:34px !important;height:36px !important;min-height:36px !important;font-size:16px !important;line-height:1 !important;padding:0 !important;align-self:center !important;}
-
-/* دەقی قورئانی پێداچوونەوە: قەبارەکەی تەنها لە ناو پێداچوونەوە دەگۆڕدرێت */
-html body #startRev #srTextIn{font-size:calc(var(--review-font-size,16px)*1.7) !important;}
 </style>
 <script>
 /* هەڵگرتنی ئایەت لە پانێڵی پێداچوونەوە: دەست لێگرتنی ئایەت یان دوگمەی «هەڵگرتنی ئایەتی گەیشتوو» + دەستپێکردنەوە لەو ئایەتەوە */
@@ -20721,22 +20715,14 @@ html body #startRev #srTextIn{font-size:calc(var(--review-font-size,16px)*1.7) !
   var $=function(i){return document.getElementById(i);};
   function curSura(){ try{ return Number(currentMarksSura()); }catch(e){ return parseInt($('suraSelect')&&$('suraSelect').value)||1; } }
   function curAyah(){ var b=$('srAyahBtn'); var m=b&&/^\s*(\d+)/.exec(b.textContent||''); return m?parseInt(m[1]):1; }
-  // ئایەتی گەیشتووی پێداچوونەوە: کلیلی تایبەتی خۆی هەیە و هیچ پەیوەندییەکی بە هەڵگرتنی شاشەی سەرەکییەوە نییە
-  var RKEY='review_progress_bookmark'+(typeof RECITER_SUFFIX!=='undefined'?RECITER_SUFFIX:'');
-  function saved(){ try{ var o=JSON.parse(localStorage.getItem(RKEY)||'{}')||{}; return {s:parseInt(o.lastSura)||0,a:parseInt(o.lastAyah)||0}; }catch(e){ return {s:0,a:0}; } }
+  function saved(){ try{ var o=getBookmarks(); return {s:parseInt(o.lastSura)||0,a:parseInt(o.lastAyah)||0}; }catch(e){ return {s:0,a:0}; } }
   function save(){
-    var s=curSura(), a=curAyah();
-    try{ localStorage.setItem(RKEY,JSON.stringify({lastSura:s,lastAyah:a})); }catch(e){}
-    paintBm(true); patchMenu();
+    var s=curSura(), a=curAyah(), o={};
+    o['sura_'+s]=a; o.lastSura=s; o.lastAyah=a;
+    try{ saveBookmarks(o); }catch(e){}
+    try{ updateProgressButtons(); }catch(e){}
+    paintBm(true);
     try{ if(navigator.vibrate) navigator.vibrate(40); }catch(e){}
-  }
-  // دوگمەکانی «هەڵگیراوە» و «سڕینەوە» لە مینیوی پێداچوونەوە ئایەتی هەڵگیراوی پێداچوونەوە نیشان دەدەن، نەک ئەوەی شاشەی سەرەکی
-  function patchMenu(){
-    var box=$('srSettings'); if(!box) return;
-    var b=saved(), has=!!(b.s&&b.a);
-    var ld=box.querySelector('#loadProgressBtn'), cl=box.querySelector('#clearProgressBtn');
-    if(ld){ if(has){ ld.style.display='block'; try{ ld.textContent=tf('progressSaved',{s:getSuraName(b.s),a:b.a}); }catch(e){} } else ld.style.display='none'; }
-    if(cl) cl.style.display=has?'block':'none';
   }
   var badge=document.createElement('div'); badge.id='srBmBadge';
   var holder=$('srText'); if(holder) holder.appendChild(badge);
@@ -20788,11 +20774,7 @@ html body #startRev #srTextIn{font-size:calc(var(--review-font-size,16px)*1.7) !
       setTimeout(function(){ paintBm(false); },300);
     })();
   }
-  var restoredOnce=false, openB=$('startRevBtn');
-  if(openB) openB.addEventListener('click',function(){
-    if(restoredOnce) return;
-    setTimeout(function(){ if(panel.style.display==='flex'){ restoredOnce=true; restore(); } },300);
-  });
+  setTimeout(restore,500);
   // دوگمەی «هەڵگیراوە: ...» لە مینیوەکەدا: یەکسەر بچۆ سەر ئەو ئایەتە
   panel.addEventListener('click',function(e){
     var b=e.target.closest&&e.target.closest('#srSettings #loadProgressBtn'); if(!b) return;
@@ -20801,28 +20783,18 @@ html body #startRev #srTextIn{font-size:calc(var(--review-font-size,16px)*1.7) !
     window.__bmSuraAsked=false;
     setTimeout(restore,100);
   },true);
-  // دوگمەی «سڕینەوەی ئایەتی گەیشتوو» لە مینیوی پێداچوونەوە: تەنها ئایەتی هەڵگیراوی پێداچوونەوە دەسڕێتەوە
-  panel.addEventListener('click',function(e){
-    var b=e.target.closest&&e.target.closest('#srSettings #clearProgressBtn'); if(!b) return;
-    e.stopImmediatePropagation(); e.preventDefault();
-    try{ localStorage.removeItem(RKEY); }catch(e2){}
-    paintBm(false);
-    var mb=$('srMenuBtn'); if(mb) setTimeout(function(){ mb.click(); },0);
-  },true);
-  // هەر جارێک مینیوی پێداچوونەوە دروست دەبێتەوە، دوگمەکانی هەڵگرتن بەپێی ئایەتی هەڵگیراوی پێداچوونەوە ڕێک بکە
-  try{ new MutationObserver(function(){ patchMenu(); }).observe(panel,{childList:true}); }catch(e){}
 })();
 </script>
 
 <script>
-/* مینیوی پێداچوونەوە (⋮): دەست لێدان لە هەر شوێنێکی دەرەوەی کارتی مینیو دایدەخات، پێویست ناکات دووبارە ⋮ بپەستیت */
+/* مینیوی پێداچوونەوە (⋮): دەست لێدان لە هەر شوێنێکی دەرەوەی کارتی مینیو دایدەخات */
 (function(){
   var panel=document.getElementById('startRev'); if(!panel) return;
   panel.addEventListener('click',function(e){
     var box=document.getElementById('srSettings'); if(!box) return;
     var t=e.target; if(!t||!t.closest) return;
     if(t.closest('#srSettings')||t.closest('#srMenuBtn')) return;
-    e.stopImmediatePropagation(); e.preventDefault();      // ئەو دەستلێدانە تەنها مینیو دادەخات و هیچ دوگمەیەکی ژێرەوە کار ناکات
+    e.stopImmediatePropagation(); e.preventDefault();
     var mb=document.getElementById('srMenuBtn'); if(mb) mb.click();
   },true);
 })();
