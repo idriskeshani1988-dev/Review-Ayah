@@ -18462,7 +18462,7 @@ exportDb.addEventListener('click', async ()=>{
     flushSuraToMaster(currentMarksSura());
     const data = masterDb.export();
     const blob = new Blob([data], {type:'application/x-sqlite3'});
-    await saveBlob(blob, 'quran_timings.db');
+    await saveBlob(blob, 'review_timings.db');
   }catch(err){
     alert(t('errSaveDb') + (err && err.message ? err.message : err));
   }finally{
@@ -18490,7 +18490,7 @@ function isSurahComplete(){
   for(let a=1; a<=total; a++){ if(!have.has(a)) return false; }
   return true;
 }
-const AUTO_DB_NAME = (RECITER || 'Quran-timing') + '.db';   // the one database file kept in the Ayah-marker folder
+const AUTO_DB_NAME = 'Review-' + (RECITER || 'Quran-timing') + '.db';   // the one database file kept in the Ayah-marker folder
 const APP_FOLDER = 'Ayah-marker';
 // Try Downloads/Ayah-marker/<name>; if the Android bridge cannot make sub-folders, fall back to Downloads/<name>.
 function saveIntoAppFolder(name, b64){
